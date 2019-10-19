@@ -1,0 +1,162 @@
+1) Hyper-V as Admin
+2) Install Ubuntu 18.04.02 LTS - Default Switch, Whatever Path for disk
+3) Secure Boot - Microsoft UEFI Certificate authority
+4) Installing Ubuntu - Minimal Installation + Download Updates
+5) All Default Settings
+6) Enable SSH - easier to manage
+
+sudo apt update
+sudo apt install openssh-server -y
+
+7) Find IP - we'll SSH from our local machine
+
+ip addr show
+
+8) Install curl - needed for installing docker + demos
+
+sudo apt-get install curl
+
+9) Install Docker - https://docs.docker.com/install/linux/docker-ce/ubuntu/
+
+sudo apt-get update
+
+sudo apt-get install \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg-agent \
+    software-properties-common
+
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+
+sudo add-apt-repository \
+   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+   $(lsb_release -cs) \
+   stable"
+
+sudo apt-get install docker-ce docker-ce-cli containerd.io
+
+10) Trivial Example 
+    sudo docker run --name wordpress -d wordpress
+
+This cannot be connected from the outside since there are no port mappings
+
+11) Get the running containers
+    sudo docker containers ls
+
+12) Remove the current container
+    sudo docker container rm <id> -f 
+
+13) Two instances of wordpress with port mapping
+    sudo docker run --name wordpress-80 -d -p 80:80 wordpress
+    sudo docker run --name wordpress-6969 -d -p 6969:80 wordpress
+
+14) Install a mysql container
+    sudo docker run --name mysql -p 3306:3306 -p 33060:33060 -e MYSQL_ROOT_PASSWORD=albert -d mysql:5.6
+
+15) Connect to mysql container - sanity checks
+
+    sudo docker exec -it mysql mysql -uroot -p
+
+    SHOW DATABASES;
+
+16) Cleanup; set with proper network
+
+    sudo docker stop $(sudo docker ps -a -q)
+    sudo docker rm $(sudo docker ps -a -q)
+
+    sudo docker network create wordpress
+
+17) Re-create container images
+
+    sudo docker run --name mysql --net wordpress -e MYSQL_ROOT_PASSWORD=albert -d mysql:5.6
+    sudo docker run --name wordpress-80 --net wordpress -d -p 80:80 wordpress
+    sudo docker run --name wordpress-6969 -d -p 6969:80 wordpress
+
+18) Connect to mysql db and create the required database
+
+    sudo docker exec -it mysql mysql -uroot -p
+
+    CREATE DATABASE wordpress;
+
+19) Follow the installation as usual, prove that wordpress works
+
+    wordpress
+    root
+    albert
+    mysql
+    wp_
+
+20) Upgrade to new version of mysql: 5.7
+
+    sudo docker ps
+    sudo docker container rm <id>
+    sudo docker run --name mysql --net wordpress -e MYSQL_ROOT_PASSWORD=albert -d mysql:5.7
+
+21) Adding storage
+
+    sudo docker volume create wordpress
+
+    sudo docker ps
+    sudo docker container rm <id>
+    sudo docker run --name mysql --net wordpress -e MYSQL_ROOT_PASSWORD=albert --mount source=wordpress,target=/var/lib/mysql -d mysql:5.7 
+
+22) Prove it works
+
+    sudo docker ps
+    sudo docker container rm <id>
+    sudo docker run --name mysql --net wordpress -e MYSQL_ROOT_PASSWORD=albert -d mysql:5.7 
+
+    Should show language screen
+
+    sudo docker ps
+    sudo docker container rm <id>
+    sudo docker run --name mysql --net wordpress -e MYSQL_ROOT_PASSWORD=albert --mount source=wordpress,target=/var/lib/mysql -d mysql:5.7 
+
+    Should take you to created blog
+
+23) Prove it works with MariaDB
+
+    sudo docker ps
+    sudo docker container rm <id>
+    sudo docker run --name mysql --net wordpress -e MYSQL_ROOT_PASSWORD=albert --mount source=wordpress,target=/var/lib/mysql -d mariadb
+
+24) Docker compose time!
+
+    Cleanup
+
+    sudo docker stop $(sudo docker ps -a -q)
+    sudo docker rm $(sudo docker ps -a -q)
+    sudo docker network rm wordpress
+    sudo docker volume rm wordpress
+
+    Install
+
+    sudo curl -L "https://github.com/docker/compose/releases/download/1.24.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    sudo chmod +x /usr/local/bin/docker-compose
+    sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+    docker-compose --version
+
+25) Install on Azure
+
+    https://portal.azure.com/
+    Search -> App Service Plan
+    New RG / "wordpress" / Linux / Free F1
+
+    Search -> Web App
+    Basics: Existing RG / "wordpress" / Docker Image / Linux / Region / App Service Plan (existing)
+    Docker: Docker Compose / Docker Hub / Public / Upload File
+
+    Wait (a lot apparently) - Wait for items to be provisioned plus database to come online
+
+26) Deploy custom built application locally
+
+    Create Container Registry
+    sudo docker login kssdocker.azurecr.io
+
+
+26) Use Cases VISA
+
+    Discussion-worthy points: Provisioning time - RSM problem - moving CSP
+
+https://www.cloudphysics.com/static/uploads/2019/02/Global-IT-Data-Lake-Q4-2016-Final.pdf

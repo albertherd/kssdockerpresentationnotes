@@ -1,0 +1,7 @@
+sudo docker tag kssdocker_web kssdocker.azurecr.io/kssdocker_web:latest
+sudo docker tag kssdocker_products kssdocker.azurecr.io/kssdocker_products:latest
+sudo docker tag kssdocker_shoppingcart kssdocker.azurecr.io/kssdocker_shoppingcart:latest
+
+sudo docker push kssdocker.azurecr.io/kssdocker_web:latest
+sudo docker push kssdocker.azurecr.io/kssdocker_products:latest
+sudo docker push kssdocker.azurecr.io/kssdocker_shoppingcart:latest

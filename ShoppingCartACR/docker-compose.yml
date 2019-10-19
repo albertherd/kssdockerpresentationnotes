@@ -1,0 +1,43 @@
+version: '3'
+
+services:
+  redis:
+    image: redis
+    networks: 
+      - poorman
+    ports:
+      - "6379:6379"
+
+  shoppingcart:
+    image: kssdocker.azurecr.io/kssdocker_shoppingcart:latest
+    networks: 
+      - poorman
+    ports:
+      - "69:80"
+    depends_on:
+      - redis
+    environment:
+      - RedisConnectionString=kssdocker_redis_1
+
+  products:
+    image: kssdocker.azurecr.io/kssdocker_products:latest
+    networks: 
+      - poorman
+    ports:
+      - "420:80"
+      
+  web:
+    image: kssdocker.azurecr.io/kssdocker_web:latest
+    networks: 
+      - poorman
+    ports:
+      - "80:80"
+    depends_on:
+      - shoppingcart
+      - products
+    environment:
+      - ShoppingCartServiceEndpoint=http://kssdocker_shoppingcart_1/api/shoppingcart/
+      - ProductsServiceEndpoint=http://kssdocker_products_1/api/products/
+      
+networks:
+  poorman:
