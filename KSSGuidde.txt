@@ -5,44 +5,46 @@
 5) All Default Settings
 6) Enable SSH - easier to manage
 
+Oy25O^zCqMO1
+
+
+0) Pre-presentation
+
+    https://portal.azure.com/
+    Search -> App Service Plan
+    New RG / "wordpress" / Linux /
+
+    Search -> Web App
+    Basics: Existing RG / "wordpress" / Docker Image / Linux / Region / App Service Plan (existing)
+    Docker: Docker Compose / Docker Hub / Public / Upload File
+
+    Also upload the custom dotnet solution!
+
+    Reason - takes around 5 minutes to provision
+
+
 sudo apt update
-sudo apt install openssh-server -y
 
-7) Find IP - we'll SSH from our local machine
+1) Install Docker - the short way -
 
-ip addr show
+    sudo curl -sSL https://get.docker.com/ | sh
 
-8) Install curl - needed for installing docker + demos
+    Full details on how to do it cross platform - https://docs.docker.com/install/linux/docker-ce/ubuntu/
 
-sudo apt-get install curl
+2) Hello world
+    sudo docker run hello-world
 
-9) Install Docker - https://docs.docker.com/install/linux/docker-ce/ubuntu/
-
-sudo apt-get update
-
-sudo apt-get install \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    gnupg-agent \
-    software-properties-common
-
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-
-sudo add-apt-repository \
-   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-   $(lsb_release -cs) \
-   stable"
-
-sudo apt-get install docker-ce docker-ce-cli containerd.io
-
-10) Trivial Example 
+10) First Example
     sudo docker run --name wordpress -d wordpress
+    This cannot be connected from the outside since there are no port mappings
 
-This cannot be connected from the outside since there are no port mappings
+10.5) Dissecting the layers
+    sudo docker history wordpress
+
+10.6) Demo that navigating to site without exposing port did not work
 
 11) Get the running containers
-    sudo docker containers ls
+    sudo docker ps
 
 12) Remove the current container
     sudo docker container rm <id> -f 
@@ -51,8 +53,16 @@ This cannot be connected from the outside since there are no port mappings
     sudo docker run --name wordpress-80 -d -p 80:80 wordpress
     sudo docker run --name wordpress-6969 -d -p 6969:80 wordpress
 
+    Open port 6969
+    VM->Networking->Inbound Port Rule->
+        Source-> Any, Ranges->*, Destination->Any. Port->6969, Protocol->TCP, Action->Allow, Priority->310
+
+    Might take a second to propagate
+
 14) Install a mysql container
-    sudo docker run --name mysql -p 3306:3306 -p 33060:33060 -e MYSQL_ROOT_PASSWORD=albert -d mysql:5.6
+    sudo docker run --name mysql -e MYSQL_ROOT_PASSWORD=albert -d mysql:5.6
+
+    Might take a second to initialize 
 
 15) Connect to mysql container - sanity checks
 
@@ -60,6 +70,12 @@ This cannot be connected from the outside since there are no port mappings
 
     SHOW DATABASES;
 
+15.5) Remove the newly spun mysql container and add one with ana lias
+
+    sudo docker ps
+    sudo docker container rm <id> -f 
+    sudo docker run --name mysql --network-alias mysqlAlias -e MYSQL_ROOT_PASSWORD=albert -d mysql:5.6
+  
 16) Cleanup; set with proper network
 
     sudo docker stop $(sudo docker ps -a -q)
@@ -69,11 +85,11 @@ This cannot be connected from the outside since there are no port mappings
 
 17) Re-create container images
 
-    sudo docker run --name mysql --net wordpress -e MYSQL_ROOT_PASSWORD=albert -d mysql:5.6
+    sudo docker run --name mysql --network-alias mysqlAlias --net wordpress -e MYSQL_ROOT_PASSWORD=albert -d mysql:5.6
     sudo docker run --name wordpress-80 --net wordpress -d -p 80:80 wordpress
-    sudo docker run --name wordpress-6969 -d -p 6969:80 wordpress
+    sudo docker run --name wordpress-6969 --net wordpress -d -p 6969:80 wordpress
 
-18) Connect to mysql db and create the required database
+    --SHOW THE CAN'T SELECT DATABASE ERROR-
 
     sudo docker exec -it mysql mysql -uroot -p
 
@@ -95,13 +111,18 @@ This cannot be connected from the outside since there are no port mappings
 
 21) Adding storage
 
+    sudo docker stop $(sudo docker ps -a -q)
+    sudo docker rm $(sudo docker ps -a -q)
+
     sudo docker volume create wordpress
 
-    sudo docker ps
-    sudo docker container rm <id>
     sudo docker run --name mysql --net wordpress -e MYSQL_ROOT_PASSWORD=albert --mount source=wordpress,target=/var/lib/mysql -d mysql:5.7 
+    sudo docker run --name wordpress-80 --net wordpress -d -p 80:80 wordpress
+  
+    sudo docker exec -it mysql mysql -uroot -p
+    CREATE DATABASE wordpress;
 
-22) Prove it works
+    -- Prove it works --
 
     sudo docker ps
     sudo docker container rm <id>
@@ -137,6 +158,8 @@ This cannot be connected from the outside since there are no port mappings
     sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
     docker-compose --version
 
+    Get the docker-compose file from WordPressOnMariaDB
+
 25) Install on Azure
 
     https://portal.azure.com/
@@ -151,8 +174,21 @@ This cannot be connected from the outside since there are no port mappings
 
 26) Deploy custom built application locally
 
+    git clone https://github.com/albertherd/KSSDocker
+    cd KSSDocker
+    sudo docker-compose up
+
+    demo that it works locally
+
+27) Deploy it to Azure, with ACR
+
     Create Container Registry
     sudo docker login kssdocker.azurecr.io
+
+    run PushDockerImagesToACR
+
+
+
 
 
 26) Use Cases VISA
